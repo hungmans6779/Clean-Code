@@ -1,0 +1,86 @@
+參考網址：
+http://blackgu.blogbus.com/logs/69596661.html
+
+
+
+在多线程程序设计中，经常会遇到一个线程等待一个或多个线程的场景，遇到这样的场景应该如何解决？
+如果是一个线程等待一个线程，则可以通过await()和notify()来实现；
+如果是一个线程等待多个线程，则就可以使用CountDownLatch和CyclicBarrier来实现比较好的控制。
+
+下面来详细描述下CountDownLatch的应用场景：
+例如：百米赛跑：8名运动员同时起跑，由于速度的快慢，肯定有会出现先到终点和晚到终点的情况，而终点有个统计成绩的仪器，当所有选手到达终点时，
+它会统计所有人的成绩并进行排序，然后把结果发送到汇报成绩的系统。
+其实这就是一个CountDownLatch的应用场景：一个线程或多个线程等待其他线程运行达到某一目标后进行自己的下一步工作，
+而被等待的“其他线程”达到这个目标后继续自己下面的任务。
+
+这个场景中：
+
+1. 被等待的“其他线程”------>8名运动员
+2. 等待“其他线程”的这个线程------>终点统计成绩的仪器
+
+那么，如何来通过CountDownLatch来实现上述场景的线程控制和调度呢？
+
+jdk中CountDownLatch类有一个常用的构造方法：CountDownLatch(int count)；
+                       两个常用的方法：await()和countdown() 
+
+其中count是一个计数器中的初始化数字，比如初始化的数字是2，当一个线程里调用了countdown()，则这个计数器就减一，当线程调用了await()，
+则这个线程就等待这个计数器变为0，当这个计数器变为0时，这个线程继续自己下面的工作。下面是上述CountDownLatch场景的实现：
+
+
+
+Work类（运动员）：
+
+import java.util.concurrent.CountDownLatch;
+
+public class Work implements Runnable {
+ private int id;
+ private CountDownLatch beginSignal;
+ private CountDownLatch endSignal;
+ 
+ public Work(int id, CountDownLatch begin, CountDownLatch end) {
+  this.id = id;
+  this.beginSignal = begin;
+  this.endSignal = end;
+ }
+
+ @Override
+ public void run() {
+  try {
+   beginSignal.await();
+   System.out.println("起跑...");
+   System.out.println("work" + id + "到达终点");
+   endSignal.countDown();
+   System.out.println("work" + id + "继续干其他事情");
+  } catch (InterruptedException e) {
+   // TODO Auto-generated catch block
+   e.printStackTrace();
+  }
+ }
+}
+
+
+
+
+Main类（终点统计仪器）：
+
+import java.util.concurrent.CountDownLatch;
+
+public class Main {
+ 
+ public static void main(String[] args) {
+  CountDownLatch begSignal = new CountDownLatch(1);
+  CountDownLatch endSignal = new CountDownLatch(8);
+  
+  for (int i = 0; i < 8; i++) {
+   new Thread(new Work(i, begSignal, endSignal)).start();
+  }
+  
+  try {
+   begSignal.countDown();  //统一起跑
+   endSignal.await();      //等待运动员到达终点
+   System.out.println("结果发送到汇报成绩的系统");
+  } catch (InterruptedException e) {
+   e.printStackTrace();
+  }
+ }
+}

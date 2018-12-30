@@ -1,0 +1,14 @@
+
+參考網址：
+http://www.blogjava.net/killme2008/archive/2007/09/14/145195.html
+
+
+ReentrantLock是jdk5引入的新的锁机制，它与内部锁（synchronize） 相同的并发性和内存语义，
+比如可重入加锁语义。在中等或者更高负荷下，ReentrantLock有更好的性能，并且拥有可轮询和可定时的请求锁等高级功能。
+这个程序简单对比了ReentrantLock公平锁、ReentrantLock非公平锁以及内部锁的性能，从结果上看，非公平的ReentrantLock表现最好。
+内部锁也仅仅是实现统计意义上的公平，结果也比公平的ReentrantLock好上很多。
+这个程序仅仅是计数，启动N个线程，对同一个Counter进行递增，显然，这个递增操作需要同步以保证原子性，采用不同的锁来实现同步，然后查看结果。
+
+
+
+
